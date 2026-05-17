@@ -1,0 +1,57 @@
+# Conversational RAG Chatbot Walkthrough
+
+## What Was Built
+I have successfully implemented the production-ready full-stack RAG Chatbot based on your requirements.
+
+### Features
+1. **Frontend (React + Vite)**:
+   - Modern, aesthetic sidebar layout with Tailwind CSS.
+   - Integrated drag-and-drop file upload ([Sidebar.jsx](file:///d:/SAMI/INTERNSHIP/DRDL/rag_chatbot/frontend/src/components/Sidebar.jsx)).
+   - Markdown-rendered chat messaging with Framer Motion animations ([ChatArea.jsx](file:///d:/SAMI/INTERNSHIP/DRDL/rag_chatbot/frontend/src/components/ChatArea.jsx)).
+   - Source reference collapsible components linking answers directly to their uploaded docs.
+
+2. **Backend (FastAPI)**:
+   - File parsing via PyPDF2, docx, and standard UTF-8 TXT files.
+   - Text Chunking using `RecursiveCharacterTextSplitter`.
+   - Embeddings & Vector Storage using `ChromaDB` configured for persistence.
+   - LangChain `ConversationalRetrievalChain` handling conversation context and memory.
+   
+3. **Deployment Ready**:
+   - Includes standard [Dockerfile](file:///d:/SAMI/INTERNSHIP/DRDL/rag_chatbot/backend/Dockerfile) for the backend.
+   - [docker-compose.yml](file:///d:/SAMI/INTERNSHIP/DRDL/rag_chatbot/docker-compose.yml) for unified spin-up.
+   - Clean [README.md](file:///d:/SAMI/INTERNSHIP/DRDL/rag_chatbot/README.md) containing run instructions and API docs.
+
+## Setup & Validation Instructions
+The application is pre-configured and ready to run.
+
+### 1. Configure the API Key
+Go to `d:\SAMI\INTERNSHIP\DRDL\rag_chatbot\backend\.env` (copy from [.env.example](file:///d:/SAMI/INTERNSHIP/DRDL/rag_chatbot/backend/.env.example)) and insert your OpenAI key:
+```env
+OPENAI_API_KEY=your_key_here
+```
+
+### 2. Running Locally (Option A)
+Terminal 1 (Backend):
+```bash
+cd d:\SAMI\INTERNSHIP\DRDL\rag_chatbot\backend
+venv\Scripts\activate
+uvicorn app.main:app --reload
+```
+
+Terminal 2 (Frontend):
+```bash
+cd d:\SAMI\INTERNSHIP\DRDL\rag_chatbot\frontend
+npm run dev
+```
+
+### 3. Running via Docker (Option B)
+```bash
+cd d:\SAMI\INTERNSHIP\DRDL\rag_chatbot
+docker-compose up --build
+```
+
+### 4. Let's Chat!
+1. Open `http://localhost:5173`.
+2. Click **Upload Knowledge** to submit a PDF.
+3. Type a query in the message bar about your uploaded pdf!
+4. The system will load, search ChromaDB, fetch the correct sources, and generate the response.

@@ -1,0 +1,12 @@
+{
+  "dependencies": {
+    "autoprefixer": "^10.5.0",
+    "axios": "^1.16.1",
+    "framer-motion": "^12.38.0",
+    "lucide-react": "^1.16.0",
+    "postcss": "^8.5.14",
+    "react-markdown": "^10.1.0",
+    "react-router-dom": "^7.15.1",
+    "tailwindcss": "^4.3.0"
+  }
+}
