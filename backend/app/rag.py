@@ -1,4 +1,4 @@
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_ollama import ChatOllama, OllamaEmbeddings
 from langchain_chroma import Chroma
 from langchain.chains import ConversationalRetrievalChain, LLMChain
 from langchain.memory import ConversationBufferMemory
@@ -12,13 +12,11 @@ llm = None
 
 def init_rag():
     global embeddings, vectorstore, llm
-    if not settings.OPENAI_API_KEY:
-        return
-        
-    # Standard text embedding model
-    embeddings = OpenAIEmbeddings(
-        model=settings.EMBEDDING_MODEL, 
-        openai_api_key=settings.OPENAI_API_KEY
+    
+    # Ollama text embedding model
+    embeddings = OllamaEmbeddings(
+        model=settings.EMBEDDING_MODEL,
+        base_url=settings.OLLAMA_BASE_URL
     )
     
     # Persistent Chroma DB
@@ -28,10 +26,10 @@ def init_rag():
     )
     
     # Chat LLM
-    llm = ChatOpenAI(
+    llm = ChatOllama(
         model=settings.MODEL_NAME,
         temperature=0.0,
-        openai_api_key=settings.OPENAI_API_KEY
+        base_url=settings.OLLAMA_BASE_URL
     )
 
 def get_retrieval_chain(memory: ConversationBufferMemory):

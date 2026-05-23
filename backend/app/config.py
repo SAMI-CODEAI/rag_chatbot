@@ -5,10 +5,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Settings(BaseSettings):
-    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
+    # OPENAI_API_KEY removed for Ollama
     FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:5173")
-    MODEL_NAME: str = os.getenv("MODEL_NAME", "gpt-4o-mini")
-    EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
+    OLLAMA_BASE_URL: str = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+    MODEL_NAME: str = os.getenv("MODEL_NAME", "llama3.2:1b")
+    EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "nomic-embed-text")
     CHUNKING_SIZE: int = 1000
     CHUNKING_OVERLAP: int = 200
     TOP_K_RETRIEVAL: int = 8

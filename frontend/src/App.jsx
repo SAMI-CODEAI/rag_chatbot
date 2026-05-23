@@ -8,7 +8,6 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<ChatArea />} />
-          <Route path="c/:sessionId" element={<ChatArea />} />
         </Route>
       </Routes>
     </BrowserRouter>

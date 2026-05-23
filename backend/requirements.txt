@@ -1,7 +1,7 @@
 fastapi
 uvicorn
 langchain
-langchain-openai
+langchain-ollama
 chromadb
 pypdf
 python-docx

@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+.env
+
+# Database
+chroma_db/
+chat_history.db
+
+# Ollama Data
+ollama_data/
+
+# OS
+.DS_Store
+Thumbs.db

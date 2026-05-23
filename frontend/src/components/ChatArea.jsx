@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from "react";
 import { Send, Bot, User, Loader2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { motion, AnimatePresence } from "framer-motion";
-import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 
 export default function ChatArea() {
@@ -10,19 +9,15 @@ export default function ChatArea() {
     const [input, setInput] = useState("");
     const [loading, setLoading] = useState(false);
 
-    const { sessionId } = useParams();
-    const navigate = useNavigate();
+    const [sessionId] = useState(() => {
+        const saved = localStorage.getItem('chat_session_id');
+        if (saved) return saved;
+        const newId = Math.random().toString(36).substring(7);
+        localStorage.setItem('chat_session_id', newId);
+        return newId;
+    });
 
     useEffect(() => {
-        if (!sessionId) {
-            const newId = Math.random().toString(36).substring(7);
-            navigate(`/c/${newId}`, { replace: true });
-        }
-    }, [sessionId, navigate]);
-
-    useEffect(() => {
-        if (!sessionId) return;
-
         const fetchHistory = async () => {
             try {
                 const response = await axios.get(`http://localhost:8000/api/chat/history?session_id=${sessionId}`);

@@ -1,29 +1,12 @@
-import { useState, useRef, useEffect } from "react";
-import { UploadCloud, FileText, Trash2, AlertCircle, MessageSquarePlus, MessageSquare } from "lucide-react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useState, useRef } from "react";
+import { UploadCloud, FileText, Trash2, X, AlertCircle } from "lucide-react";
 import axios from "axios";
 
 export default function Sidebar() {
     const [files, setFiles] = useState([]);
     const [uploading, setUploading] = useState(false);
     const [error, setError] = useState(null);
-    const [sessions, setSessions] = useState([]);
     const fileInputRef = useRef(null);
-    const navigate = useNavigate();
-    const location = useLocation();
-    const currentSessionId = location.pathname.split("/c/")[1];
-
-    useEffect(() => {
-        const fetchSessions = async () => {
-            try {
-                const res = await axios.get("http://localhost:8000/api/chat/sessions");
-                setSessions(res.data);
-            } catch (err) {
-                console.error("Failed to fetch sessions", err);
-            }
-        };
-        fetchSessions();
-    }, [location.pathname]); // Refetch when location changes (new chat created)
 
     const handleFileChange = async (e) => {
         const selectedFiles = Array.from(e.target.files);
@@ -102,34 +85,6 @@ export default function Sidebar() {
                         <span>{error}</span>
                     </div>
                 )}
-
-                <div className="mb-4">
-                    <button
-                        onClick={() => navigate("/")}
-                        className="w-full py-2 px-4 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors text-sm font-medium flex items-center justify-center mb-4"
-                    >
-                        <MessageSquarePlus className="w-4 h-4 mr-2" />
-                        New Chat
-                    </button>
-
-                    <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Recent Chats</h3>
-                    {sessions.length === 0 ? (
-                        <div className="text-sm text-gray-400 italic px-2 mb-6">No past chats.</div>
-                    ) : (
-                        <div className="space-y-1 mb-6 max-h-48 overflow-y-auto pr-1">
-                            {sessions.map(s => (
-                                <Link
-                                    key={s.session_id}
-                                    to={`/c/${s.session_id}`}
-                                    className={`flex items-center p-2 rounded text-sm truncate transition-colors ${currentSessionId === s.session_id ? 'bg-indigo-100 text-indigo-900 font-medium' : 'hover:bg-gray-50 text-gray-700'}`}
-                                >
-                                    <MessageSquare className="w-4 h-4 mr-2 shrink-0 opacity-50" />
-                                    <span className="truncate">{s.title || 'New Chat'}</span>
-                                </Link>
-                            ))}
-                        </div>
-                    )}
-                </div>
 
                 <div className="mb-4">
                     <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Knowledge Base</h3>

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.models import ChatMessage, ChatSession
+from app.models import ChatMessage
 from app.config import settings
 import os
 import shutil
@@ -20,7 +20,6 @@ async def health_check():
 async def reset_system(db: Session = Depends(get_db)):
     # Clear SQLite Chat History
     db.query(ChatMessage).delete()
-    db.query(ChatSession).delete()
     db.commit()
 
     # Clear uploads

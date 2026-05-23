@@ -5,7 +5,7 @@ import json
 from langchain.memory import ConversationBufferMemory
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.models import ChatMessage, ChatSession
+from app.models import ChatMessage
 from app.rag import get_retrieval_chain, init_rag
 
 router = APIRouter()
@@ -30,11 +30,6 @@ class ChatResponse(BaseModel):
     answer: str
     sources: List[SourceDoc]
 
-@router.get("/sessions")
-def get_chat_sessions(db: Session = Depends(get_db)):
-    sessions = db.query(ChatSession).order_by(ChatSession.created_at.desc()).all()
-    return [{"session_id": s.session_id, "title": s.title, "created_at": s.created_at} for s in sessions]
-
 @router.get("/history")
 def get_chat_history(session_id: str, db: Session = Depends(get_db)):
     messages = db.query(ChatMessage).filter(ChatMessage.session_id == session_id).order_by(ChatMessage.timestamp).all()
@@ -46,14 +41,6 @@ async def chat_endpoint(req: ChatRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Message cannot be empty")
         
     try:
-        # Ensure ChatSession exists
-        chat_session = db.query(ChatSession).filter(ChatSession.session_id == req.session_id).first()
-        if not chat_session:
-            title = req.message[:30] + "..." if len(req.message) > 30 else req.message
-            new_session = ChatSession(session_id=req.session_id, title=title)
-            db.add(new_session)
-            db.commit()
-
         # Rehydrate memory from SQLite if this is a new server lifecycle
         if req.session_id not in sessions_memory:
             memory = ConversationBufferMemory(
