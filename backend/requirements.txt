@@ -9,3 +9,6 @@ python-dotenv
 pydantic
 langchain-chroma
 python-multipart
+ragas
+datasets
+pandas
