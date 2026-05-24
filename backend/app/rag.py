@@ -39,10 +39,10 @@ def get_retrieval_chain(memory: ConversationBufferMemory):
         if not vectorstore or not llm:
             raise ValueError("RAG system not initialized.")
             
-    # Direct similarity retrieval — top 6 most relevant chunks
+    # MMR retrieval — balances relevance with diversity across document sections
     retriever = vectorstore.as_retriever(
-        search_type="similarity",
-        search_kwargs={"k": 6}
+        search_type="mmr",
+        search_kwargs={"k": 8, "fetch_k": 20, "lambda_mult": 0.7}
     )
     
     # Grounding prompt — handles both specific and broad/overview questions

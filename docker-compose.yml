@@ -11,23 +11,22 @@ services:
       - ./backend/uploads:/app/uploads
       - ./backend/chroma_db:/app/chroma_db
     environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
       - FRONTEND_URL=http://localhost:5173
-      - MODEL_NAME=gpt-4o-mini
-      - EMBEDDING_MODEL=text-embedding-3-small
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - MODEL_NAME=llama3.2:1b
+      - EMBEDDING_MODEL=nomic-embed-text
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
 
-  # Frontend in production would be built and served statically (e.g., via NGINX) or deployed to Vercel.
-  # For local docker-compose testing, we run the vite dev server.
   frontend:
-    image: node:20-alpine
-    working_dir: /app
-    volumes:
-      - ./frontend:/app
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     ports:
-      - "5173:5173"
-    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+      - "5173:80"
     environment:
-      - VITE_API_BASE_URL=http://backend:8000
+      - VITE_API_BASE_URL=http://localhost:8000
     depends_on:
       - backend
+    restart: unless-stopped

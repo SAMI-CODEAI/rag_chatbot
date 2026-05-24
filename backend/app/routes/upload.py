@@ -1,6 +1,7 @@
 from fastapi import APIRouter, File, UploadFile, HTTPException
 from typing import List
 import os
+import re
 import uuid
 import shutil
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -10,6 +11,23 @@ from app.config import settings
 import app.rag as rag
 
 router = APIRouter()
+
+def _find_section_header(text: str, chunk_start: int) -> str:
+    """Find the nearest section header above a chunk's position in the text."""
+    # Look at all lines before the chunk position
+    preceding_text = text[:chunk_start]
+    lines = preceding_text.split('\n')
+    
+    # Walk backwards to find the nearest heading-like line
+    for line in reversed(lines):
+        stripped = line.strip()
+        if not stripped:
+            continue
+        # Heading patterns: lines ending with ':', short ALL-CAPS lines, or lines with common heading markers
+        if (stripped.endswith(':') and len(stripped) < 100) or \
+           (stripped.isupper() and 3 < len(stripped) < 80):
+            return stripped
+    return ""
 
 @router.post("/")
 async def upload_files(files: List[UploadFile] = File(...)):
@@ -47,12 +65,22 @@ async def upload_files(files: List[UploadFile] = File(...)):
             )
             chunks = text_splitter.split_text(text)
             
+            # Enrich chunks with section headers for better retrieval context
+            enriched_chunks = []
+            for chunk in chunks:
+                pos = text.find(chunk[:50])  # approximate position in original text
+                header = _find_section_header(text, pos) if pos >= 0 else ""
+                if header:
+                    enriched_chunks.append(f"[Section: {header}]\n{chunk}")
+                else:
+                    enriched_chunks.append(chunk)
+            
             # Create Langchain Documents
             docs = [
                 LangchainDocument(
-                    page_content=chunk,
+                    page_content=enriched_chunk,
                     metadata={"source": file.filename, "chunk_id": i}
-                ) for i, chunk in enumerate(chunks)
+                ) for i, enriched_chunk in enumerate(enriched_chunks)
             ]
             
             # Add to vector store

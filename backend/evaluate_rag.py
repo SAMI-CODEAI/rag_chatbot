@@ -17,15 +17,19 @@ from ragas.run_config import RunConfig
 
 # Prepare Evaluation Data
 test_questions = [
-    "What is the main topic of the uploaded document?",
-    "Can you summarize the second chapter?",
-    "What are the key findings mentioned in the text?",
+    "What is a Database Management System (DBMS)?",
+    "What are the different types of keys in a database?",
+    "Explain the basic operators in Relational Algebra.",
+    "What are the different states of a transaction?",
+    "What is an ER diagram and what are its components?",
 ]
 
 ground_truths = [
-    "The document discusses DBMS concepts and relational algebra.",
-    "The second chapter covers ER modeling and database design.",
-    "The key findings include the importance of normalization and indexing.",
+    "A DBMS is a software for storing and retrieving users' data while considering appropriate security measures. It consists of a group of programs which manipulate the database.",
+    "Types of keys include Super Key (set of attributes that can identify each tuple uniquely), Candidate Key (minimal set of attributes for unique identification), and Primary Key (a candidate key selected by the database designer, which is unique and NOT NULL).",
+    "Basic operators in Relational Algebra include Selection (σ) to select rows based on conditions, Projection (∏) to project columns, Cross Product (X) returning m*n rows, and Union (U) returning tuples in either R1 or R2.",
+    "Transaction states include Active State (instructions being executed, changes stored in buffer), Partially Committed State (after last instruction executed), and the transaction must follow ACID properties.",
+    "An ER diagram is a conceptual model that gives the graphical representation of the logical structure of the database. It is composed of Entity Sets, Attributes, and Relationship Sets.",
 ]
 
 def run_evaluation():

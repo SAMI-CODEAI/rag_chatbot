@@ -97,3 +97,9 @@ Access the application at `http://localhost:5173`.
 ## Deployment Guide
 - **Vercel**: Link the GitHub repository and set the root directory to `frontend`. Ensure `VITE_API_BASE_URL` points to the production backend URL.
 - **Render / Railway**: Link the GitHub repository and set the Dockerfile path to `backend/Dockerfile`. Add the necessary environment variables (`OPENAI_API_KEY`, etc.).
+
+
+
+
+[19:57:05] Evaluation Results:
+{'faithfulness': 0.7500, 'answer_relevancy': 0.9721, 'context_precision': 0.7153, 'context_recall': 0.9333}
