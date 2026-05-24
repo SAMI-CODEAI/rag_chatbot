@@ -3,6 +3,8 @@ from langchain_chroma import Chroma
 from langchain.chains import ConversationalRetrievalChain, LLMChain
 from langchain.memory import ConversationBufferMemory
 from langchain_core.prompts import PromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate, ChatPromptTemplate
+from langchain.retrievers import ContextualCompressionRetriever
+from langchain_community.document_compressors.flashrank_rerank import FlashrankRerank
 from app.config import settings
 
 # Global instances (init lazily as they require API keys)
@@ -39,19 +41,32 @@ def get_retrieval_chain(memory: ConversationBufferMemory):
         if not vectorstore or not llm:
             raise ValueError("RAG system not initialized. Check API keys.")
             
-    # Quick similarity retriever
-    retriever = vectorstore.as_retriever(
-        search_type="similarity",
+    # Base retriever with initial fetch_k
+    base_retriever = vectorstore.as_retriever(
+        search_type="similarity_score_threshold",
         search_kwargs={
-            "k": settings.TOP_K_RETRIEVAL,
+            "k": settings.FETCH_K,
+            "score_threshold": 0.2, # Slightly lowered to ensure we don't miss relevant but low-scoring chunks
         }
     )
     
+    # Reranker compressor
+    compressor = FlashrankRerank(top_n=settings.TOP_K_RETRIEVAL)
+    
+    # Combined compression retriever
+    retriever = ContextualCompressionRetriever(
+        base_compressor=compressor, 
+        base_retriever=base_retriever
+    )
+    
     # Grounding prompt
-    system_template = """You are an intelligent, helpful AI assistant. The user has uploaded documents, and the 'Additional Context' below contains excerpts from those uploaded files.
-    When the user asks about the 'uploaded file', 'document', or 'book', they are referring to this context. ALWAYS treat this context as the contents of the uploaded files. Do not say you cannot read files.
-    If the context contains information relevant to the user's question, prioritize using it.
-    If the context is irrelevant to a general question, use your general knowledge to give a helpful and accurate response.
+    system_template = """You are a specialized AI assistant that answers questions based ONLY on the provided context.
+    
+    CRITICAL INSTRUCTIONS:
+    1. If the 'Additional Context' below contains information that can answer the user's question, you MUST use it.
+    2. Even if the information is brief or partial, provide the best answer possible based ONLY on that context.
+    3. If the context is empty or completely irrelevant, only then use your general knowledge, but prioritize the context.
+    4. Do NOT say "I cannot read files" or "I don't have access to documents". You HAVE access to the excerpts below.
     
     Additional Context:
     {context}

@@ -12,7 +12,7 @@ from ragas.metrics import (
 from app.rag import get_retrieval_chain, init_rag
 from app.config import settings
 from langchain.memory import ConversationBufferWindowMemory
-from langchain_ollama import ChatOllama
+from langchain_ollama import ChatOllama, OllamaEmbeddings
 from ragas.run_config import RunConfig
 
 # Prepare Evaluation Data
@@ -68,6 +68,12 @@ def run_evaluation():
 
     dataset = Dataset.from_pandas(pd.DataFrame(data))
     
+    # Use the same embeddings as the RAG system for evaluation
+    evaluator_embeddings = OllamaEmbeddings(
+        model=settings.EMBEDDING_MODEL,
+        base_url=settings.OLLAMA_BASE_URL
+    )
+    
     print(f"[{datetime.now().strftime('%H:%M:%S')}] Running Ragas evaluation...", flush=True)
     result = evaluate(
         dataset,
@@ -78,7 +84,7 @@ def run_evaluation():
             context_recall,
         ],
         llm=evaluator_llm,
-        embeddings=None,
+        embeddings=evaluator_embeddings,
         run_config=RunConfig(timeout=1800, max_workers=2, max_retries=3) # Increased max_workers to 2
     )
     
