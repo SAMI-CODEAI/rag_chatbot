@@ -3,8 +3,6 @@ from langchain_chroma import Chroma
 from langchain.chains import ConversationalRetrievalChain, LLMChain
 from langchain.memory import ConversationBufferMemory
 from langchain_core.prompts import PromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate, ChatPromptTemplate
-from langchain.retrievers import ContextualCompressionRetriever
-from langchain_community.document_compressors.flashrank_rerank import FlashrankRerank
 from app.config import settings
 
 # Global instances (init lazily as they require API keys)
@@ -27,50 +25,38 @@ def init_rag():
         embedding_function=embeddings
     )
     
-    # Chat LLM with generation limit for speed
+    # Chat LLM with generation limit for speed (1B model)
     llm = ChatOllama(
         model=settings.MODEL_NAME,
         temperature=0.0,
         base_url=settings.OLLAMA_BASE_URL,
-        num_predict=512  # Prevent infinite loops/long responses
+        num_predict=512
     )
 
 def get_retrieval_chain(memory: ConversationBufferMemory):
     if not vectorstore or not llm:
         init_rag()
         if not vectorstore or not llm:
-            raise ValueError("RAG system not initialized. Check API keys.")
+            raise ValueError("RAG system not initialized.")
             
-    # Base retriever with initial fetch_k
-    base_retriever = vectorstore.as_retriever(
-        search_type="similarity_score_threshold",
-        search_kwargs={
-            "k": settings.FETCH_K,
-            "score_threshold": 0.2, # Slightly lowered to ensure we don't miss relevant but low-scoring chunks
-        }
+    # Direct similarity retrieval — top 6 most relevant chunks
+    retriever = vectorstore.as_retriever(
+        search_type="similarity",
+        search_kwargs={"k": 6}
     )
     
-    # Reranker compressor
-    compressor = FlashrankRerank(top_n=settings.TOP_K_RETRIEVAL)
-    
-    # Combined compression retriever
-    retriever = ContextualCompressionRetriever(
-        base_compressor=compressor, 
-        base_retriever=base_retriever
-    )
-    
-    # Grounding prompt
-    system_template = """You are a specialized AI assistant that answers questions based ONLY on the provided context.
-    
-    CRITICAL INSTRUCTIONS:
-    1. If the 'Additional Context' below contains information that can answer the user's question, you MUST use it.
-    2. Even if the information is brief or partial, provide the best answer possible based ONLY on that context.
-    3. If the context is empty or completely irrelevant, only then use your general knowledge, but prioritize the context.
-    4. Do NOT say "I cannot read files" or "I don't have access to documents". You HAVE access to the excerpts below.
-    
-    Additional Context:
-    {context}
-    """
+    # Grounding prompt — handles both specific and broad/overview questions
+    system_template = """You are a helpful and accurate AI assistant. Answer the user's question using ONLY the context provided below.
+
+Rules:
+1. If the context contains the answer, provide it clearly and concisely.
+2. If the question is broad or asks for an overview (e.g., "what topics are covered"), summarize the key topics and themes present in the context.
+3. If the context truly contains no relevant information, say: "I'm sorry, but the provided documentation does not contain information to answer this question."
+4. DO NOT use your internal knowledge to fill in gaps. Stay strictly to the provided context.
+
+Context:
+{context}
+"""
     
     messages = [
         SystemMessagePromptTemplate.from_template(system_template),

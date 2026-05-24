@@ -59,8 +59,10 @@ async def chat_endpoint(req: ChatRequest, db: Session = Depends(get_db)):
         memory = sessions_memory[req.session_id]
         
         # Check if vectorstore has data
-        has_docs = False
         import app.rag as rag
+        rag.init_rag() # Initialize so vectorstore is no longer None
+        
+        has_docs = False
         if rag.vectorstore:
             try:
                 if rag.vectorstore._collection.count() > 0:
