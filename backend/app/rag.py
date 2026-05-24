@@ -25,11 +25,12 @@ def init_rag():
         embedding_function=embeddings
     )
     
-    # Chat LLM
+    # Chat LLM with generation limit for speed
     llm = ChatOllama(
         model=settings.MODEL_NAME,
         temperature=0.0,
-        base_url=settings.OLLAMA_BASE_URL
+        base_url=settings.OLLAMA_BASE_URL,
+        num_predict=512  # Prevent infinite loops/long responses
     )
 
 def get_retrieval_chain(memory: ConversationBufferMemory):
@@ -38,21 +39,12 @@ def get_retrieval_chain(memory: ConversationBufferMemory):
         if not vectorstore or not llm:
             raise ValueError("RAG system not initialized. Check API keys.")
             
-    from langchain.retrievers.multi_query import MultiQueryRetriever
-    
-    # 1. Base Retriever with MMR for diversity
-    base_retriever = vectorstore.as_retriever(
-        search_type="mmr",
+    # Quick similarity retriever
+    retriever = vectorstore.as_retriever(
+        search_type="similarity",
         search_kwargs={
             "k": settings.TOP_K_RETRIEVAL,
-            "fetch_k": settings.FETCH_K
         }
-    )
-    
-    # 2. Multi-Query Retriever for question expansion (fixes semantic misses)
-    retriever = MultiQueryRetriever.from_llm(
-        retriever=base_retriever, 
-        llm=llm
     )
     
     # Grounding prompt
