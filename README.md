@@ -1,105 +1,112 @@
-# Conversational RAG Chatbot
+# Local RAG Assistant: Advanced Retrieval-Augmented Generation Pipeline
 
-A production-ready full-stack Retrieval-Augmented Generation (RAG) chatbot allowing users to upload documents (PDF, DOCX, TXT) and ask contextual questions.
+A high-performance, privacy-focused RAG system leveraging local LLMs for domain-specific document intelligence. This project implements advanced retrieval strategies (MMR) and context-enrichment techniques to ensure high-fidelity grounding and minimize hallucinations.
 
-## Architecture
+## 🏗️ System Architecture
 
-- **Frontend**: React + Vite, Tailwind CSS, Framer Motion
-- **Backend**: FastAPI, LangChain, ChromaDB, OpenAI
-- **Deployment**: Docker Compose ready. Frontend can be deployed to Vercel, Backend to Render/Railway.
+The pipeline is split into two primary phases: **Context-Aware Ingestion** and **High-Precision Querying**.
 
-## Data Flow Architecture
+### 1. Ingestion Pipeline
+Processes raw unstructured data (PDF, DOCX, TXT) into a persistent vector database with structural context preservation.
 
-### 1. Document Ingestion Pipeline
-This flow occurs when a user drops files into the application sidebar.
 ```mermaid
 graph TD
-    A[User Uploads Files] -->|PDF / DOCX / TXT| B(FastAPI Upload Route)
-    B --> C{Document Loaders}
-    C -->|pypdf / python-docx| D[Raw Text Extraction]
-    D --> E[RecursiveCharacterTextSplitter]
-    E -->|Text Chunks| F[OpenAI Embeddings Model]
-    F -->|Vector Embeddings| G[(ChromaDB Vector Store)]
+    A[Unstructured Data] --> B[Text Extraction]
+    B --> C[Recursive Character Splitting]
+    C --> D[Section Header Enrichment]
+    D --> E[Ollama Embeddings]
+    E --> F[(ChromaDB Persistent Store)]
+    
+    subgraph Enrichment
+    D1[Scan for Upward Section Headers] --> D2[Prefix Chunk with Header]
+    end
 ```
 
-### 2. Retrieval & Chat Pipeline
-This flow handles user queries by injecting semantic context into the language model.
+### 2. Query & Inference Pipeline
+Handles user interactions using an optimized search-and-generate loop.
+
 ```mermaid
-graph TD
-    A[User Sends Query] --> B(FastAPI Chat Route)
-    B --> C[Check ChromaDB size]
+graph LR
+    User[User Query] --> Memory[Conversation Memory]
+    Memory --> Retrieval[MMR Retrieval]
+    Retrieval --> Context[Context Aggregation]
+    Context --> Prompt[Grounded System Prompt]
+    Prompt --> LLM[Local LLM - Ollama]
+    LLM --> Answer[Final Answer]
     
-    C -->|If Empty| D[General LLM Chain]
-    D --> |Answers Freely| E[OpenAI Model]
-    
-    C -->|If Populated| F[ConversationalRetrievalChain]
-    F --> G[Extract query embeddings]
-    G --> H[Semantic Similarity Search]
-    H -->|Query| I[(ChromaDB Vector Store)]
-    I -->|Top K Documents| J[Prompt Context Injection]
-    
-    J --> E
-    K[(Conversation Buffer Memory)] -.->|Past Messages| F
-    K -.->|Past Messages| D
-    
-    E -->|Generated Response| L[Frontend UI Render]
+    subgraph Search Strategy
+    Ret1[Fetch k=20] --> Ret2[MMR Diversity Reranking] --> Ret3[Select top k=8]
+    end
 ```
 
-## Setup Instructions
+---
 
-### 1. Environment Variables
-Create a `.env` file in the `backend/` directory:
+## 🚀 Advanced ML Features
+
+### 🧩 Context-Aware Chunking (Header Enrichment)
+Traditional chunking often loses the hierarchical context of a document. This system implements **Nearest Header Enrichment**:
+- **Algorithm**: During ingestion, for each chunk, the system scans backwards for lines matching heading patterns (e.g., ALL-CAPS or colon-terminated).
+- **Benefit**: Chunks are prefixed with their relevant section (e.g., `[Section: Transaction States] ...`), significantly improving retrieval accuracy for questions requiring specific structural context.
+
+### 🔍 Optimized Retrieval (MMR)
+We utilize **Maximal Marginal Relevance (MMR)** to balance semantic relevance with information diversity.
+- **Parameters**: `k=8`, `fetch_k=20`, `lambda_mult=0.7`.
+- **Why**: Pure semantic search often returns redundant chunks. MMR ensures the retrieved context covers different aspects of the query, leading to more comprehensive answers.
+
+### 🛡️ Grounded Generation
+The system utilizes a **strictly grounded prompt** that instructs the LLM to answer *only* using provided context. 
+- **Hallucination Guard**: Explicit "I safely don't know" fallback logic.
+- **Local Native**: Powered by `llama3.1` (8B) or `tinyllama` (1B) via Ollama, ensuring data never leaves the local environment.
+
+---
+
+## 📊 Evaluation Framework (Ragas)
+
+Performance is validated using the **Ragas** framework, which employs an LLM-as-a-judge approach to assess internal RAG metrics.
+
+| Metric | Description | Objective |
+| :--- | :--- | :--- |
+| **Faithfulness** | Measures how well the answer is derived solely from context. | Minimize Hallucinations |
+| **Answer Relevancy** | Measures the pertinence of the answer to the user query. | Ensure User Satisfaction |
+| **Context Precision** | Measures if the ground-truth relevant chunks are ranked higher. | Optimize Vector Search |
+| **Context Recall** | Measures if all necessary info to answer is present in retrieved docs. | Minimize Information Loss |
+
+> [!NOTE]
+> Evaluation is performed using `llama3.1:8b` as the critic to ensure high-quality labels.
+
+---
+
+## 🛠️ Technical Stack
+
+- **Backend**: [FastAPI](https://fastapi.tiangolo.com/) - High-performance asynchronous API layer.
+- **Orchestration**: [LangChain](https://www.langchain.com/) - RAG logic and chain management.
+- **Vector Database**: [ChromaDB](https://www.trychroma.com/) - Persistent local vector storage.
+- **Embeddings & Inference**: [Ollama](https://ollama.ai/) - Local model hosting via GGUF format.
+- **Evaluation**: [Ragas](https://docs.ragas.io/) - Automated ML evaluation metrics.
+
+---
+
+## ⚙️ Setup & Execution
+
+### 1. Environment Configuration
+Define your model parameters and local endpoints in `backend/.env`:
 ```env
-OPENAI_API_KEY=your_sk_key_here
-FRONTEND_URL=http://localhost:5173
-MODEL_NAME=gpt-4o-mini
-EMBEDDING_MODEL=text-embedding-3-small
+MODEL_NAME=tinyllama:1.1b
+EMBEDDING_MODEL=mxbai-embed-large
+OLLAMA_BASE_URL=http://localhost:11434
+CHUNKING_SIZE=500
+CHUNKING_OVERLAP=50
 ```
 
-### 2. Manual Run
-
-**Backend:**
+### 2. Deployment
+Execute the containerized stack:
 ```bash
-cd backend
-python -m venv venv
-source venv/bin/activate  # or venv\Scripts\activate on Windows
-pip install -r requirements.txt
-uvicorn app.main:app --reload
+docker-compose up -d --build
 ```
 
-**Frontend:**
+### 3. Model Evaluation
+To reproduce evaluation metrics:
 ```bash
-cd frontend
-npm install
-npm run dev
+python backend/evaluate_rag.py
 ```
-
-### 3. Docker Compose Run
-Ensure Docker is installed and running.
-```bash
-docker-compose up --build
-```
-Access the application at `http://localhost:5173`.
-
-## Features
-- **File Upload System**: Sidebar UI to upload files using `FastAPI` file endpoints. 
-- **RAG Pipeline**: Leverages `RecursiveCharacterTextSplitter` and `ChromaDB` for embedding and retrieval.
-- **Conversational Memory**: Multiturn chat memory tracked via local session ID.
-- **Contextual Responses**: AI restricted to grounding via System Prompts.
-- **Modern UI**: Clean SaaS-like interface built with Tailwind and Framer Motion.
-
-## API Documentation
-- `POST /api/upload`: Expects `multipart/form-data` with `files`.
-- `POST /api/chat`: Expects JSON `{"message": "string", "session_id": "string"}`. Returns `ChatResponse`.
-- `GET /api/system/`: Health check
-- `DELETE /api/system/reset`: Clears Chroma DB and Uploads.
-
-## Deployment Guide
-- **Vercel**: Link the GitHub repository and set the root directory to `frontend`. Ensure `VITE_API_BASE_URL` points to the production backend URL.
-- **Render / Railway**: Link the GitHub repository and set the Dockerfile path to `backend/Dockerfile`. Add the necessary environment variables (`OPENAI_API_KEY`, etc.).
-
-
-
-
-[19:57:05] Evaluation Results:
-{'faithfulness': 0.7500, 'answer_relevancy': 0.9721, 'context_precision': 0.7153, 'context_recall': 0.9333}
+Detailed metrics will be exported to `rag_evaluation_results.csv`.
